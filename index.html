@@ -1,0 +1,311 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Tirage au sort</title>
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🎲</text></svg>">
+<style>
+  :root { --violet: #6741d9; --violet-fonce: #4c2a9e; --jaune: #ffd43b; --menthe: #63e6be; --texte: #241a3d; --doux: #5c5270; }
+  * { box-sizing: border-box; }
+  body { margin: 0; min-height: 100vh; font-family: ui-rounded, "SF Pro Rounded", system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; color: var(--texte); line-height: 1.45;
+    background: #f3f0ff; }
+  button, input, textarea { font: inherit; color: inherit; }
+  :focus-visible { outline: 3px solid var(--jaune); outline-offset: 3px; box-shadow: 0 0 0 6px var(--violet-fonce); }
+  [hidden] { display: none !important; }
+  .sr-only { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; border: 0; }
+  .entete { text-align: center; color: #fff; padding: 1.75rem 1rem 3.5rem; background: linear-gradient(135deg, #5f3dc4, #7950f2); border-radius: 0 0 36px 36px; }
+  .entete h1 { margin: 0; font-size: clamp(2rem, 9vw, 2.8rem); font-weight: 900; letter-spacing: -.02em; text-shadow: 3px 3px 0 var(--violet-fonce); }
+  .entete p { margin: .3rem 0 0; font-weight: 600; }
+  .grille { max-width: 980px; margin: -2.5rem auto 0; padding: 0 1rem 2rem; display: grid; gap: 1rem; grid-template-columns: 1fr; }
+  @media (min-width: 760px) { .grille { grid-template-columns: 1fr 1fr; } #carte-participants { grid-row: span 2; } }
+  .carte { background: #fff; border-radius: 28px; padding: 1.25rem; box-shadow: 0 12px 30px rgba(76, 42, 158, .2); }
+  .carte h2 { margin: 0 0 .75rem; font-size: 1.25rem; font-weight: 900; display: flex; align-items: center; gap: .5rem; }
+  .carte h2 .bulle { background: var(--jaune); border-radius: 50%; width: 2.2rem; height: 2.2rem; display: inline-grid; place-items: center; }
+  label, legend { font-weight: 800; }
+  #noms { width: 100%; margin-top: .35rem; border: 3px solid #e5dbff; border-radius: 18px; padding: .75rem; resize: vertical; background: #faf8ff; min-height: 10rem; }
+  #noms:focus-visible { border-color: var(--violet); box-shadow: none; outline-offset: 2px; outline-color: var(--violet); }
+  .meta { color: var(--doux); font-size: .9rem; margin: .35rem 0 .75rem; }
+  .btn { border: 0; border-radius: 999px; padding: .7rem 1.2rem; font-weight: 900; cursor: pointer; background: var(--violet); color: #fff; box-shadow: 0 4px 0 var(--violet-fonce); }
+  .btn:hover { background: #5f3dc4; }
+  .btn:active { transform: translateY(3px); box-shadow: 0 1px 0 var(--violet-fonce); }
+  .btn-jaune { background: var(--jaune); color: var(--texte); box-shadow: 0 4px 0 #e0a800; }
+  .btn-jaune:hover { background: #fcc419; }
+  .btn-large { width: 100%; font-size: 1.1rem; padding: .85rem; }
+  .ligne { display: flex; flex-wrap: wrap; gap: .6rem; align-items: center; }
+  .ecran { margin: 0 0 1rem; min-height: 5.5rem; display: grid; place-items: center; text-align: center; border-radius: 22px; background: repeating-linear-gradient(45deg, #f3f0ff 0 12px, #ede7ff 12px 24px); font-size: clamp(1.5rem, 7vw, 2.1rem); font-weight: 900; padding: .75rem; overflow-wrap: anywhere; }
+  .ecran.gagnant { background: var(--jaune); animation: hop .5s cubic-bezier(.3, 1.6, .5, 1); }
+  @keyframes hop { 0% { transform: scale(.85); } 100% { transform: scale(1); } }
+  .case { display: flex; gap: .5rem; align-items: center; font-weight: 600; margin: 0 0 1rem; }
+  .case input { width: 1.2rem; height: 1.2rem; accent-color: var(--violet); }
+  #historique { margin: .75rem 0 0; padding-left: 1.25rem; color: var(--doux); font-size: .9rem; }
+  #taille-equipe { width: 5rem; padding: .55rem; border: 3px solid #e5dbff; border-radius: 14px; text-align: center; font-weight: 800; }
+  #resultat-equipes { display: grid; grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); gap: .6rem; margin-top: 1rem; }
+  .equipe { border-radius: 18px; padding: .7rem .9rem; background: var(--fond-equipe, #e6fcf5); }
+  .equipe h3 { margin: 0 0 .3rem; font-size: 1rem; }
+  .equipe ul { margin: 0; padding-left: 1.1rem; }
+  #resultat-ordre { margin: .75rem 0 0; padding-left: 1.6rem; }
+  #resultat-ordre li { padding: .15rem 0; font-weight: 700; }
+  fieldset { border: 0; padding: 0; margin: 0 0 1rem; }
+  .choix-des { display: flex; gap: .5rem; margin-top: .4rem; }
+  .choix-des label { cursor: pointer; position: relative; }
+  .choix-des input { position: absolute; opacity: 0; }
+  .choix-des span { display: inline-block; padding: .45rem 1rem; border-radius: 999px; border: 3px solid #e5dbff; font-weight: 900; }
+  .choix-des input:checked + span { background: var(--violet); border-color: var(--violet); color: #fff; }
+  .choix-des input:focus-visible + span { outline: 3px solid var(--violet-fonce); outline-offset: 2px; }
+  .des { display: flex; gap: 1rem; justify-content: center; min-height: 5rem; margin-bottom: .5rem; flex-wrap: wrap; }
+  .de { width: 4.5rem; height: 4.5rem; background: #fff; border: 3px solid var(--texte); border-radius: 16px; display: grid; grid-template: repeat(3, 1fr) / repeat(3, 1fr); padding: .45rem; box-shadow: 4px 4px 0 var(--violet); }
+  .de.roule { animation: roule .5s ease-out; }
+  @keyframes roule { 0% { transform: rotate(-25deg) scale(.8); } 60% { transform: rotate(12deg) scale(1.05); } 100% { transform: rotate(0) scale(1); } }
+  .pip { width: 70%; height: 70%; margin: auto; border-radius: 50%; }
+  .pip.on { background: var(--texte); }
+  .total { text-align: center; font-weight: 900; font-size: 1.15rem; min-height: 1.5em; margin: 0 0 1rem; }
+  .pied { text-align: center; color: var(--doux); font-size: .85rem; padding-bottom: 2rem; }
+  @media (prefers-reduced-motion: reduce) { .ecran.gagnant, .de.roule { animation: none; } }
+</style>
+</head>
+<body>
+<header class="entete">
+  <h1>🎲 Tirage au sort</h1>
+  <p>Qui fait la vaisselle ? Le hasard décide, et il est impartial.</p>
+</header>
+
+<main class="grille">
+  <section class="carte" id="carte-participants" aria-labelledby="titre-participants">
+    <h2 id="titre-participants"><span class="bulle" aria-hidden="true">👥</span> Les participants</h2>
+    <label for="noms">Un nom par ligne</label>
+    <textarea id="noms" rows="9" placeholder="Alice&#10;Bilal&#10;Chloé&#10;David"></textarea>
+    <p id="nb-participants" class="meta" aria-live="polite">0 participant</p>
+    <button type="button" id="btn-melanger" class="btn btn-jaune">🔀 Mélanger l’ordre</button>
+    <ol id="resultat-ordre" aria-label="Ordre de passage"></ol>
+  </section>
+
+  <section class="carte" id="carte-tirage" aria-labelledby="titre-tirage">
+    <h2 id="titre-tirage"><span class="bulle" aria-hidden="true">🎯</span> Tirer une personne</h2>
+    <p id="resultat-tirage" class="ecran" aria-hidden="true">?</p>
+    <p id="annonce" class="sr-only" aria-live="assertive"></p>
+    <label class="case"><input type="checkbox" id="option-retirer"> Retirer la personne tirée de la liste</label>
+    <button type="button" id="btn-tirer" class="btn btn-large">Tirer au sort !</button>
+    <ol id="historique" aria-label="Derniers tirages"></ol>
+  </section>
+
+  <section class="carte" id="carte-equipes" aria-labelledby="titre-equipes">
+    <h2 id="titre-equipes"><span class="bulle" aria-hidden="true">🤝</span> Faire des équipes</h2>
+    <div class="ligne">
+      <label for="taille-equipe">Personnes par équipe</label>
+      <input type="number" id="taille-equipe" min="1" max="50" value="2" inputmode="numeric">
+      <button type="button" id="btn-equipes" class="btn">Former les équipes</button>
+    </div>
+    <div id="resultat-equipes" aria-live="polite"></div>
+  </section>
+
+  <section class="carte" id="carte-des" aria-labelledby="titre-des">
+    <h2 id="titre-des"><span class="bulle" aria-hidden="true">🎲</span> Lancer les dés</h2>
+    <fieldset>
+      <legend>Nombre de dés</legend>
+      <div class="choix-des">
+        <label><input type="radio" name="nb-des" id="nb-des-1" value="1" checked><span>1</span></label>
+        <label><input type="radio" name="nb-des" id="nb-des-2" value="2"><span>2</span></label>
+        <label><input type="radio" name="nb-des" id="nb-des-3" value="3"><span>3</span></label>
+      </div>
+    </fieldset>
+    <div id="resultat-des" class="des"></div>
+    <p id="total-des" class="total" aria-live="polite"></p>
+    <button type="button" id="btn-lancer-des" class="btn btn-jaune btn-large">Lancer !</button>
+  </section>
+</main>
+<p class="pied">Tirage au sort · par Inès Moreau · hasard fourni par crypto.getRandomValues</p>
+
+<script>
+(function () {
+  'use strict';
+  const CLE = 'tirage:v1';
+  const COULEURS_EQUIPES = ['#e6fcf5', '#fff3bf', '#f3f0ff', '#ffe3e3', '#e7f5ff', '#fff0f6'];
+  const FACES = { 1: [4], 2: [0, 8], 3: [0, 4, 8], 4: [0, 2, 6, 8], 5: [0, 2, 4, 6, 8], 6: [0, 2, 3, 5, 6, 8] };
+  const $ = (sel) => document.querySelector(sel);
+  const el = {
+    noms: $('#noms'), nb: $('#nb-participants'), ecran: $('#resultat-tirage'), annonce: $('#annonce'),
+    retirer: $('#option-retirer'), historique: $('#historique'), taille: $('#taille-equipe'),
+    equipes: $('#resultat-equipes'), ordre: $('#resultat-ordre'), des: $('#resultat-des'), totalDes: $('#total-des'),
+    btnTirer: $('#btn-tirer'), btnDes: $('#btn-lancer-des')
+  };
+  const mouvementReduit = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+  // --- Hasard cryptographique, sans biais de modulo ---
+  function hasard(max) {
+    const limite = Math.floor(0x100000000 / max) * max;
+    const tampon = new Uint32Array(1);
+    do { crypto.getRandomValues(tampon); } while (tampon[0] >= limite);
+    return tampon[0] % max;
+  }
+  function melanger(tableau) {
+    const t = tableau.slice();
+    for (let i = t.length - 1; i > 0; i--) {
+      const j = hasard(i + 1);
+      [t[i], t[j]] = [t[j], t[i]];
+    }
+    return t;
+  }
+
+  // --- Stockage local protégé ---
+  let prefs = { noms: '', taille: 2, nbDes: 1, retirer: false };
+  try {
+    const d = JSON.parse(localStorage.getItem(CLE));
+    if (d && typeof d.noms === 'string') prefs = Object.assign(prefs, d);
+  } catch (e) { /* stockage indisponible */ }
+  function sauvegarder() {
+    prefs.noms = el.noms.value;
+    prefs.taille = Number(el.taille.value) || 2;
+    prefs.nbDes = Number(document.querySelector('input[name="nb-des"]:checked').value);
+    prefs.retirer = el.retirer.checked;
+    try { localStorage.setItem(CLE, JSON.stringify(prefs)); } catch (e) { /* tant pis */ }
+  }
+
+  function lireNoms() { return el.noms.value.split('\n').map((n) => n.trim()).filter(Boolean); }
+  function majCompteur() {
+    const n = lireNoms().length;
+    el.nb.textContent = n + ' participant' + (n > 1 ? 's' : '');
+  }
+  function exigerNoms(min, zone) {
+    const noms = lireNoms();
+    if (noms.length < min) {
+      zone.textContent = el.annonce.textContent = min > 1 ? 'Ajoute au moins ' + min + ' noms 😉' : 'Ajoute au moins un nom 😉';
+      el.noms.focus();
+      return null;
+    }
+    return noms;
+  }
+
+  // --- Tirer une personne, avec un petit suspense ---
+  let animation = null;
+  function tirer() {
+    const noms = exigerNoms(1, el.ecran);
+    if (!noms || animation) return;
+    const gagnant = noms[hasard(noms.length)];
+    el.ecran.classList.remove('gagnant');
+    el.btnTirer.disabled = true;
+    let etape = 0;
+    const etapes = mouvementReduit ? 0 : 18;
+    const suivant = () => {
+      if (etape < etapes) {
+        el.ecran.textContent = noms[hasard(noms.length)];
+        etape += 1;
+        animation = setTimeout(suivant, 40 + etape * etape * 0.8); // ralentit petit à petit
+        return;
+      }
+      animation = null;
+      el.ecran.textContent = gagnant;
+      void el.ecran.offsetWidth; // relance l'animation CSS
+      el.ecran.classList.add('gagnant');
+      el.annonce.textContent = 'Et c’est… ' + gagnant + ' !';
+      el.btnTirer.disabled = false;
+      const li = document.createElement('li');
+      li.textContent = gagnant;
+      el.historique.prepend(li);
+      while (el.historique.children.length > 5) el.historique.lastElementChild.remove();
+      if (el.retirer.checked) {
+        const reste = el.noms.value.split('\n');
+        const index = reste.findIndex((n) => n.trim() === gagnant);
+        if (index >= 0) reste.splice(index, 1);
+        el.noms.value = reste.join('\n');
+        majCompteur();
+        sauvegarder();
+      }
+    };
+    suivant();
+  }
+
+  // --- Équipes de N personnes ---
+  function formerEquipes() {
+    const noms = exigerNoms(2, el.equipes);
+    if (!noms) return;
+    const taille = Math.min(50, Math.max(1, Math.round(Number(el.taille.value)) || 2));
+    el.taille.value = taille;
+    const melange = melanger(noms);
+    el.equipes.replaceChildren();
+    for (let i = 0; i < melange.length; i += taille) {
+      const numero = i / taille + 1;
+      const carte = document.createElement('div');
+      carte.className = 'equipe';
+      carte.style.setProperty('--fond-equipe', COULEURS_EQUIPES[(numero - 1) % COULEURS_EQUIPES.length]);
+      const titre = document.createElement('h3');
+      titre.textContent = 'Équipe ' + numero;
+      const ul = document.createElement('ul');
+      melange.slice(i, i + taille).forEach((nom) => {
+        const li = document.createElement('li');
+        li.textContent = nom;
+        ul.append(li);
+      });
+      carte.append(titre, ul);
+      el.equipes.append(carte);
+    }
+    if (noms.length % taille) {
+      const note = document.createElement('p');
+      note.className = 'meta';
+      note.textContent = 'La dernière équipe est incomplète (' + (noms.length % taille) + ' personne' + (noms.length % taille > 1 ? 's' : '') + ').';
+      el.equipes.append(note);
+    }
+    sauvegarder();
+  }
+
+  // --- Mélanger l'ordre de la liste ---
+  function melangerOrdre() {
+    const noms = exigerNoms(2, el.nb);
+    if (!noms) return;
+    const ordre = melanger(noms);
+    el.noms.value = ordre.join('\n');
+    el.ordre.replaceChildren();
+    ordre.forEach((nom) => {
+      const li = document.createElement('li');
+      li.textContent = nom;
+      el.ordre.append(li);
+    });
+    majCompteur();
+    sauvegarder();
+  }
+
+  // --- Dés ---
+  function dessinerDe(valeur, roule) {
+    const de = document.createElement('div');
+    de.className = 'de' + (roule && !mouvementReduit ? ' roule' : '');
+    de.setAttribute('role', 'img');
+    de.setAttribute('aria-label', 'Dé : ' + valeur);
+    for (let i = 0; i < 9; i++) {
+      const pip = document.createElement('span');
+      pip.className = 'pip' + (FACES[valeur].includes(i) ? ' on' : '');
+      de.append(pip);
+    }
+    return de;
+  }
+  function lancerDes() {
+    const nb = Number(document.querySelector('input[name="nb-des"]:checked').value);
+    const valeurs = Array.from({ length: nb }, () => hasard(6) + 1);
+    el.des.replaceChildren(...valeurs.map((v) => dessinerDe(v, true)));
+    const total = valeurs.reduce((a, b) => a + b, 0);
+    el.totalDes.textContent = nb > 1 ? valeurs.join(' + ') + ' = ' + total : 'Tu as fait ' + total + ' !';
+    sauvegarder();
+  }
+
+  // --- Événements ---
+  el.noms.addEventListener('input', () => { majCompteur(); sauvegarder(); });
+  el.retirer.addEventListener('change', sauvegarder);
+  el.taille.addEventListener('change', sauvegarder);
+  document.querySelectorAll('input[name="nb-des"]').forEach((r) => r.addEventListener('change', sauvegarder));
+  el.btnTirer.addEventListener('click', tirer);
+  $('#btn-equipes').addEventListener('click', formerEquipes);
+  $('#btn-melanger').addEventListener('click', melangerOrdre);
+  el.btnDes.addEventListener('click', lancerDes);
+
+  // --- Démarrage ---
+  el.noms.value = prefs.noms;
+  el.taille.value = prefs.taille;
+  el.retirer.checked = !!prefs.retirer;
+  const radio = document.getElementById('nb-des-' + prefs.nbDes);
+  if (radio) radio.checked = true;
+  majCompteur();
+  el.des.replaceChildren(dessinerDe(6, false));
+})();
+</script>
+<script src="https://appmixtape.web.app/remix.js" data-app="wZxy6H3vezZkUrcpdCkwZVroWxK2/Kqcv7ll0pKC1Gy4VdfMJ" defer></script>
+</body>
+</html>

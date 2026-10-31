@@ -1,0 +1,15 @@
+{
+  "name": "mixtapps-tirage",
+  "private": true,
+  "version": "1.0.0",
+  "description": "Qui commence ? Tire un nom avec suspense, forme des équipes, mélange l’ordre de passage ou lance jusqu’à 3 dés. Un hasard vraiment impartial.",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "preview": "vite preview"
+  },
+  "devDependencies": {
+    "vite": "^8.3.0"
+  }
+}
